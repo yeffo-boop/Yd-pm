@@ -12,7 +12,7 @@ it.
 - **CLIENT** — a `ClientContact` linked to a `User`. Access is always scoped
   to a specific `ClientCompany` and, within it, to specific `Project`s.
   There is no "client admin" sub-role in v1: a primary contact and an
-  additional contact have the same *capabilities*, differing only in which
+  additional contact have the same _capabilities_, differing only in which
   projects they can see (primary: all of their company's projects,
   implicitly; additional: only projects explicitly granted via
   `ProjectMembership`).
@@ -45,49 +45,49 @@ Legend: **Y** = allowed, **Own** = allowed only within the user's
 authorized scope (own company / granted projects), **N** = never, **N (UI+
 API)** = enforced identically at both layers, not just hidden in the UI.
 
-| Capability | OWNER | CLIENT |
-|---|---|---|
-| View/manage inquiries & proposals | Y | N |
-| View/manage all client companies & contacts | Y | N |
-| View own company's contacts | N/A (sees all) | Own (read; edits limited to own profile) |
-| Grant/revoke additional-contact project access | Y | N |
-| Create/archive projects | Y | N |
-| View project overview | Y | Own, **published fields only** |
-| View domain/hosting details | Y | N (never returned in any client-scoped query, response, export, or search index) |
-| Edit phases/milestones/tasks (content, dates, order) | Y | N |
-| Mark own assigned task complete | Y | Own, only tasks with `assignedClientContactId = self` and `isInternalOnly = false` |
-| View internal-only tasks/notes | Y | N (N in UI **and** API) |
-| Set milestone/phase/project visibility (draft↔published) | Y | N |
-| View draft (unpublished) phases/milestones/dates | Y | N |
-| View calculated progress | Y | Own, published scope only |
-| Edit/override calculated progress | N (not editable by anyone — always derived) | N |
-| Create/edit dependencies | Y | N |
-| Trigger date change / dependency-shift preview & commit | Y | N |
-| View date-change history | Y | Own, for published items only |
-| Post project-thread messages | Y | Own project(s) |
-| Post client-visible comments | Y | Own project(s), on resources they can see |
-| Post/view internal-only comments | Y | N |
-| Upload files | Y | Own project(s), subject to size/MIME limits |
-| View/download files | Y | Own project(s), files with client-visible flag |
-| Replace a file (new version) | Y | Own, only on assets where client upload is enabled for that folder/phase |
-| View file version history | Y | Own, client-visible versions only |
-| Request approval | Y | N |
-| Record approval decision | N (owner requests, doesn't decide their own work) | Own, on requests targeting their project |
-| View approval history | Y | Own, for their project's requests |
-| Create/edit questionnaires (templates) | Y | N |
-| Fill out / submit questionnaire responses | Y (on behalf of client, rare) | Own project(s) |
-| Review/mark questionnaire responses reviewed | Y | N |
-| Create/manage support tickets | Y (all) | Own project(s) |
-| Comment on support tickets | Y | Own, on their own tickets |
-| Manage recurring maintenance templates | Y | N |
-| View in-app notifications | Y (own) | Y (own) |
-| Manage own notification preferences | Y | Y, except essential/security types |
-| View client activity log (owner-only) | Y | N |
-| View system/security audit log | Y | N |
-| View client-facing shared activity feed | Y (all) | Own, published events only |
-| Configure templates, statuses/labels, reminder defaults | Y | N |
-| Configure SMTP/integration secrets | Y (write-only; never read back to browser) | N |
-| Search | Y (global) | Own scope only, same visibility rules as direct access — a search result can never surface a draft/internal item or another company's data |
+| Capability                                               | OWNER                                             | CLIENT                                                                                                                                     |
+| -------------------------------------------------------- | ------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| View/manage inquiries & proposals                        | Y                                                 | N                                                                                                                                          |
+| View/manage all client companies & contacts              | Y                                                 | N                                                                                                                                          |
+| View own company's contacts                              | N/A (sees all)                                    | Own (read; edits limited to own profile)                                                                                                   |
+| Grant/revoke additional-contact project access           | Y                                                 | N                                                                                                                                          |
+| Create/archive projects                                  | Y                                                 | N                                                                                                                                          |
+| View project overview                                    | Y                                                 | Own, **published fields only**                                                                                                             |
+| View domain/hosting details                              | Y                                                 | N (never returned in any client-scoped query, response, export, or search index)                                                           |
+| Edit phases/milestones/tasks (content, dates, order)     | Y                                                 | N                                                                                                                                          |
+| Mark own assigned task complete                          | Y                                                 | Own, only tasks with `assignedClientContactId = self` and `isInternalOnly = false`                                                         |
+| View internal-only tasks/notes                           | Y                                                 | N (N in UI **and** API)                                                                                                                    |
+| Set milestone/phase/project visibility (draft↔published) | Y                                                 | N                                                                                                                                          |
+| View draft (unpublished) phases/milestones/dates         | Y                                                 | N                                                                                                                                          |
+| View calculated progress                                 | Y                                                 | Own, published scope only                                                                                                                  |
+| Edit/override calculated progress                        | N (not editable by anyone — always derived)       | N                                                                                                                                          |
+| Create/edit dependencies                                 | Y                                                 | N                                                                                                                                          |
+| Trigger date change / dependency-shift preview & commit  | Y                                                 | N                                                                                                                                          |
+| View date-change history                                 | Y                                                 | Own, for published items only                                                                                                              |
+| Post project-thread messages                             | Y                                                 | Own project(s)                                                                                                                             |
+| Post client-visible comments                             | Y                                                 | Own project(s), on resources they can see                                                                                                  |
+| Post/view internal-only comments                         | Y                                                 | N                                                                                                                                          |
+| Upload files                                             | Y                                                 | Own project(s), subject to size/MIME limits                                                                                                |
+| View/download files                                      | Y                                                 | Own project(s), files with client-visible flag                                                                                             |
+| Replace a file (new version)                             | Y                                                 | Own, only on assets where client upload is enabled for that folder/phase                                                                   |
+| View file version history                                | Y                                                 | Own, client-visible versions only                                                                                                          |
+| Request approval                                         | Y                                                 | N                                                                                                                                          |
+| Record approval decision                                 | N (owner requests, doesn't decide their own work) | Own, on requests targeting their project                                                                                                   |
+| View approval history                                    | Y                                                 | Own, for their project's requests                                                                                                          |
+| Create/edit questionnaires (templates)                   | Y                                                 | N                                                                                                                                          |
+| Fill out / submit questionnaire responses                | Y (on behalf of client, rare)                     | Own project(s)                                                                                                                             |
+| Review/mark questionnaire responses reviewed             | Y                                                 | N                                                                                                                                          |
+| Create/manage support tickets                            | Y (all)                                           | Own project(s)                                                                                                                             |
+| Comment on support tickets                               | Y                                                 | Own, on their own tickets                                                                                                                  |
+| Manage recurring maintenance templates                   | Y                                                 | N                                                                                                                                          |
+| View in-app notifications                                | Y (own)                                           | Y (own)                                                                                                                                    |
+| Manage own notification preferences                      | Y                                                 | Y, except essential/security types                                                                                                         |
+| View client activity log (owner-only)                    | Y                                                 | N                                                                                                                                          |
+| View system/security audit log                           | Y                                                 | N                                                                                                                                          |
+| View client-facing shared activity feed                  | Y (all)                                           | Own, published events only                                                                                                                 |
+| Configure templates, statuses/labels, reminder defaults  | Y                                                 | N                                                                                                                                          |
+| Configure SMTP/integration secrets                       | Y (write-only; never read back to browser)        | N                                                                                                                                          |
+| Search                                                   | Y (global)                                        | Own scope only, same visibility rules as direct access — a search result can never surface a draft/internal item or another company's data |
 
 ## 4. Publication / visibility model
 
@@ -122,6 +122,7 @@ URLs, notifications, exports, or page source.
 ## 5. Enforcement points (defense at every layer named in the spec)
 
 Authorization is checked, independently, at:
+
 1. **Service layer** (source of truth — repository queries are always
    pre-scoped to the caller's authorized set; this is what the isolation
    tests exercise directly, without going through HTTP).
@@ -140,6 +141,7 @@ Authorization is checked, independently, at:
    separate, unaudited code path.
 
 ## 6. Authorization test strategy (introduced Phase 1, extended every
+
 phase that adds a resource type)
 
 - Every new resource type ships with at least: (a) owner can access data

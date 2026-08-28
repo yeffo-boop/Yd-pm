@@ -1,9 +1,11 @@
 # ADR 0005: Storage abstraction over Google Cloud Storage, signed URLs, fake adapter for tests
 
 ## Status
+
 Proposed (Phase 0)
 
 ## Context
+
 The spec requires GCS for uploaded files from the start, with a storage
 abstraction (so the implementation isn't hard-wired to GCS), private
 objects only, no committed service-account key, short-lived signed
@@ -12,6 +14,7 @@ strategy for failed uploads, configurable limits, and tests using a fake
 adapter rather than real GCS.
 
 ## Decision
+
 - Define a `StorageProvider` port (`src/server/ports/storage.ts`):
   `createUploadTarget(params): { uploadUrl, objectKey, expiresAt }`,
   `createDownloadUrl(objectKey): { url, expiresAt }`,
@@ -45,12 +48,14 @@ adapter rather than real GCS.
   accidental delete stays recoverable for a while.
 
 ## Consequences
+
 - Swapping to S3-compatible storage later (e.g., if hosting economics
   change) means writing one more adapter behind the same port — no domain
   code changes.
 - Tests never depend on network access or a live GCP project.
 
 ## Alternatives considered
+
 - **Local disk storage on the VPS** — rejected as the primary store; no
   redundancy, complicates backup story, and the spec explicitly specifies
   GCS.

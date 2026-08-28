@@ -1,0 +1,99 @@
+# Docker Compose for local development and production deployment — ADR
+# 0007. Local development can also run the app natively (`npm run dev`)
+# against just the `db` service; this file is what makes `docker compose
+# up` alone fully reproducible too.
+#
+# `app`/`db` publish to 127.0.0.1 only — a host-level reverse proxy
+# (Apache, Nginx, Caddy...) terminates TLS and proxies to 127.0.0.1:3000.
+# See docs/deployment.md for a concrete walkthrough. Further production
+# hardening (resource limits, log rotation, automated backups, zero-
+# downtime deploys) is completed in Phase 8.
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-yeffohub}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-yeffohub}
+      POSTGRES_DB: ${POSTGRES_DB:-yeffohub}
+    ports:
+      # Bound to loopback only — the `app`/`worker`/`migrate` containers
+      # reach this over the internal Compose network by service name
+      # (`db:5432`) regardless; publishing to 127.0.0.1 rather than 0.0.0.0
+      # just lets you `psql` from the VPS itself for debugging without
+      # exposing Postgres to the internet.
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-yeffohub}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # One-off migration runner: `docker compose run --rm migrate`. Uses the
+  # `builder` stage (full source + devDependencies) rather than the slim
+  # `runner` image, since `prisma migrate deploy` isn't needed at runtime.
+  migrate:
+    build:
+      context: .
+      target: builder
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      # Built from the same POSTGRES_* values the `db` service uses, with
+      # the hostname hardcoded to the `db` service name — deliberately NOT
+      # falling back to a host-level `DATABASE_URL` from `.env`, which (for
+      # native `npm run dev` use) points at `localhost` and would resolve
+      # to the container itself rather than the `db` service.
+      DATABASE_URL: postgresql://${POSTGRES_USER:-yeffohub}:${POSTGRES_PASSWORD:-yeffohub}@db:5432/${POSTGRES_DB:-yeffohub}
+    command: ["npx", "prisma", "migrate", "deploy"]
+    profiles: ["tools"]
+
+  app:
+    build:
+      context: .
+      target: runner
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      # Bound to loopback only — a reverse proxy on the host (Apache,
+      # Nginx, Caddy...) terminates TLS and proxies to 127.0.0.1:3000;
+      # the app is never directly reachable from the internet on this
+      # port. See docs/deployment.md.
+      - "127.0.0.1:3000:3000"
+    environment:
+      NODE_ENV: production
+      # Built from the same POSTGRES_* values the `db` service uses, with
+      # the hostname hardcoded to the `db` service name — deliberately NOT
+      # falling back to a host-level `DATABASE_URL` from `.env`, which (for
+      # native `npm run dev` use) points at `localhost` and would resolve
+      # to the container itself rather than the `db` service.
+      DATABASE_URL: postgresql://${POSTGRES_USER:-yeffohub}:${POSTGRES_PASSWORD:-yeffohub}@db:5432/${POSTGRES_DB:-yeffohub}
+      AUTH_SECRET: ${AUTH_SECRET:?AUTH_SECRET must be set}
+      APP_BASE_URL: ${APP_BASE_URL:-http://localhost:3000}
+      ENCRYPTION_MASTER_KEY: ${ENCRYPTION_MASTER_KEY:?ENCRYPTION_MASTER_KEY must be set}
+
+  worker:
+    build:
+      context: .
+      target: worker
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      # Built from the same POSTGRES_* values the `db` service uses, with
+      # the hostname hardcoded to the `db` service name — deliberately NOT
+      # falling back to a host-level `DATABASE_URL` from `.env`, which (for
+      # native `npm run dev` use) points at `localhost` and would resolve
+      # to the container itself rather than the `db` service.
+      DATABASE_URL: postgresql://${POSTGRES_USER:-yeffohub}:${POSTGRES_PASSWORD:-yeffohub}@db:5432/${POSTGRES_DB:-yeffohub}
+
+volumes:
+  db-data:

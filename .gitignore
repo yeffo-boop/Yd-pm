@@ -1,0 +1,41 @@
+# dependencies
+/node_modules
+
+# next.js
+/.next/
+/out/
+
+# production
+/build
+
+# env
+.env
+.env.local
+.env.test
+.env.*.local
+
+# testing
+/coverage
+/playwright-report
+/test-results
+/blob-report
+
+# misc
+.DS_Store
+*.pem
+npm-debug.log*
+
+# prisma
+/prisma/dev.db*
+
+# vercel/turbo (not used, but keep out just in case a tool writes here)
+.vercel
+.turbo
+
+# typescript
+*.tsbuildinfo
+next-env.d.ts
+
+# secrets material that must never be committed
+*.key.json
+service-account*.json

@@ -17,6 +17,7 @@ a URL seen elsewhere, or calling a server action/API route directly with a
 crafted payload (bypassing the UI entirely).
 
 **Controls:**
+
 - Deny-by-default: every client-scoped repository query is pre-scoped to
   the caller's authorized project set (`docs/permissions.md` §2), computed
   server-side from the session, every time — not cached across requests,
@@ -47,6 +48,7 @@ brute force, session fixation/hijack, or account enumeration; or a former
 client contact whose access should have been revoked.
 
 **Controls:**
+
 - Passwords hashed with Argon2id (memory/time cost tuned in Phase 1 to a
   documented, benchmarked target — not left at library defaults
   unexamined).
@@ -58,11 +60,13 @@ client contact whose access should have been revoked.
   backoff — implemented in Phase 1 using a Postgres-backed counter (no new
   infra) rather than an in-memory limiter that resets on every deploy/
   restart or doesn't work across multiple app instances.
-- Session strategy is **database-backed** (Auth.js `Session` table, not
-  JWT-only) specifically so that changing a password or disabling an
-  account can delete every active session for that user immediately —
-  a stateless JWT strategy cannot do this without a separate revocation
-  list, which is strictly more complexity for the same guarantee.
+- Session strategy is JWT-based (Auth.js's Credentials provider does not
+  support its database session strategy — see ADR 0003), but every request
+  re-checks the signing user's current `tokenVersion` and `status` against
+  Postgres inside the `jwt` callback before trusting the token; changing a
+  password or disabling an account bumps `tokenVersion` in the same
+  transaction as that write, so a stale token is rejected on its very next
+  use, not merely at its natural expiry.
 - Invitation and password-reset tokens: single-use, time-limited, stored
   **hashed** (never the raw token) so a database read alone can't be used
   to forge a valid link; the raw token exists only in the emailed URL and
@@ -99,6 +103,7 @@ downstream viewer, or exploiting a signed-URL flow to get access beyond
 what was authorized.
 
 **Controls:**
+
 - Bucket is **private**; objects are never public, there is no public
   bucket ACL or public object ACL path in the codebase.
 - Object keys are server-generated opaque UUIDs — never the client's
@@ -134,7 +139,7 @@ Staging-site URLs are **stored and linked**, never fetched server-side for
 preview/screenshot purposes in the MVP — this sidesteps SSRF entirely for
 v1. If a future phase adds server-side link previews, it must go through a
 documented allow-list + redirect-blocking fetcher, never a raw
-`fetch(userSuppliedUrl)`. What Phase 6 *does* validate server-side: the
+`fetch(userSuppliedUrl)`. What Phase 6 _does_ validate server-side: the
 staging URL's **protocol** must be `https:` (or `http:` only if explicitly
 allowed) before it is stored or ever rendered as a clickable link, so a
 `javascript:` or other unsafe scheme can never be persisted or opened.

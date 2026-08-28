@@ -1,9 +1,11 @@
 # ADR 0007: Docker Compose deployment, multi-stage non-root Dockerfile, Caddy reverse proxy example
 
 ## Status
+
 Proposed (Phase 0)
 
 ## Context
+
 Target production environment is a Linux VPS without Docker currently
 installed; the spec requires Docker Compose for both local and production
 use, a multi-stage production Dockerfile running as a non-root user,
@@ -11,6 +13,7 @@ health/readiness endpoints, persistent DB volumes, and a reverse-proxy/
 HTTPS example.
 
 ## Decision
+
 - `compose.yaml` defines: `app` (Next.js web process), `worker` (pg-boss
   job worker, same image, different command), `db` (Postgres, named
   volume for persistence). A `compose.override.yaml`-style pattern (or
@@ -32,6 +35,7 @@ HTTPS example.
   distribution rather than assumed.
 
 ## Consequences
+
 - Identical container images run in local dev and production, reducing
   "works on my machine" drift.
 - Zero/low-downtime deploys and rollback are handled at the Compose level
@@ -40,6 +44,7 @@ HTTPS example.
   a single-VPS, ~25-project-scale deployment.
 
 ## Alternatives considered
+
 - **Kubernetes / managed container platform** — rejected as disproportionate
   infrastructure for this scale (spec §17 explicitly warns against this).
 - **PaaS (Render, Railway, Fly.io, etc.)** — would simplify ops but

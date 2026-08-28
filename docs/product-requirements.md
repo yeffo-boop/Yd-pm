@@ -22,17 +22,18 @@ Two experiences ship in v1:
 
 ## 2. Personas
 
-| Persona | Description | Primary goals |
-|---|---|---|
-| Owner (Yeffo) | Sole operator of YeffoDesign, `OWNER` role | Track every project's health, never miss a deadline or a client message, keep client-facing info accurate, minimize manual coordination |
-| Primary client contact | Main point of contact at a client company, `CLIENT` role, automatic access to all of that company's projects | See progress, respond to requests, upload content, approve deliverables |
-| Additional client contact | A second/third stakeholder at a client company, `CLIENT` role, access limited to explicitly granted projects | Same actions as primary contact, scoped to granted projects only |
+| Persona                   | Description                                                                                                  | Primary goals                                                                                                                           |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------- |
+| Owner (Yeffo)             | Sole operator of YeffoDesign, `OWNER` role                                                                   | Track every project's health, never miss a deadline or a client message, keep client-facing info accurate, minimize manual coordination |
+| Primary client contact    | Main point of contact at a client company, `CLIENT` role, automatic access to all of that company's projects | See progress, respond to requests, upload content, approve deliverables                                                                 |
+| Additional client contact | A second/third stakeholder at a client company, `CLIENT` role, access limited to explicitly granted projects | Same actions as primary contact, scoped to granted projects only                                                                        |
 
 Staff/employee roles are explicitly out of scope for v1 (see §3).
 
 ## 3. Scope boundaries
 
 ### In scope (v1 / MVP)
+
 - Inquiry tracking and follow-up history
 - Proposal **status** tracking (not proposal/contract authoring)
 - Idempotent conversion of an accepted proposal into a client company,
@@ -71,6 +72,7 @@ Staff/employee roles are explicitly out of scope for v1 (see §3).
   backups + documented restore, CI (lint/typecheck/test/build/e2e)
 
 ### Explicitly out of scope (v1)
+
 - Invoicing or payment collection inside YeffoHub
 - Built-in video meetings
 - Employee/team roles or multi-staff permission tiers
@@ -83,8 +85,10 @@ Staff/employee roles are explicitly out of scope for v1 (see §3).
   isolated and documented, not built)
 
 ### Deliberately deferred design questions (safe defaults, revisit later)
+
 These are not implementation blockers; each has a default documented in the
 relevant doc and can be changed without an architecture rewrite:
+
 - Exact brand colors/logo/fonts — placeholder design tokens only (see
   `docs/architecture.md` §Theming)
 - Production subdomain, VPS distro, SMTP host, GCS project/bucket — requested
@@ -97,6 +101,7 @@ relevant doc and can be changed without an architecture rewrite:
 ## 4. Feature walkthrough by module
 
 ### 4.1 Sales / inquiries
+
 - Create/edit an `Inquiry` with source, contact info, status, notes.
 - Log dated follow-ups (conversation history) with next-follow-up date.
 - Track a `ProposalRecord` per inquiry: status only (draft/sent/viewed/
@@ -109,6 +114,7 @@ relevant doc and can be changed without an architecture rewrite:
   no-op against existing records (unique constraint keyed to the proposal).
 
 ### 4.2 Client & contact management
+
 - `ClientCompany` with one primary contact (required) and any number of
   additional contacts.
 - Additional contacts get explicit per-project access grants (owner-managed);
@@ -116,8 +122,9 @@ relevant doc and can be changed without an architecture rewrite:
 - Owner can disable a contact's account (revokes sessions immediately).
 
 ### 4.3 Project delivery
+
 - Template library (`Discovery → Design → Build → Testing → Launch →
-  Support` shipped as the default) editable by the owner through the UI.
+Support` shipped as the default) editable by the owner through the UI.
 - Projects are created from a **versioned snapshot** of a template — later
   template edits never retroactively change existing projects.
 - Phase → Milestone → Task hierarchy, each independently orderable,
@@ -131,6 +138,7 @@ relevant doc and can be changed without an architecture rewrite:
   marked "no tracked work" by the owner (see `docs/data-model.md`).
 
 ### 4.4 Scheduling
+
 - Month and week calendar views; timeline/Gantt-style project view — all
   driven by the same `Phase`/`Milestone`/`Task` date fields (no duplicated
   per-view schedule data).
@@ -143,6 +151,7 @@ relevant doc and can be changed without an architecture rewrite:
   actor, timestamp, optional reason.
 
 ### 4.5 Communication
+
 - One project-wide thread per project.
 - Contextual comments on phases, milestones, tasks, files, support tickets,
   and approval requests, each with an explicit `CLIENT_VISIBLE` /
@@ -150,6 +159,7 @@ relevant doc and can be changed without an architecture rewrite:
 - Unread state per user per thread/comment.
 
 ### 4.6 Files & deliverables
+
 - Folders per project phase; tags; search by name/tag/uploader.
 - New upload of an existing file creates a new `FileVersion`; prior versions
   are retained in storage and in the database, never overwritten.
@@ -163,6 +173,7 @@ relevant doc and can be changed without an architecture rewrite:
   clearly marks whether a fresh approval is required for that version.
 
 ### 4.7 Questionnaires
+
 - Owner builds phase-based questionnaires (text, textarea, select,
   multi-select, file upload, URL, date, checkbox fields), each optionally
   required with help text.
@@ -172,12 +183,14 @@ relevant doc and can be changed without an architecture rewrite:
   `docs/security.md`).
 
 ### 4.8 Support & maintenance
+
 - Support tickets (status/priority/subject/description/comments/
   attachments) tied to a project.
 - Recurring maintenance templates generate tasks on a schedule; generation is
   idempotent per template+scheduled-occurrence, safe against worker retries.
 
 ### 4.9 Notifications
+
 - In-app (read/unread) + email, both driven from the same notification
   event, each with a stable idempotency key.
 - Deadline reminders use owner-editable global default offsets (e.g., "7

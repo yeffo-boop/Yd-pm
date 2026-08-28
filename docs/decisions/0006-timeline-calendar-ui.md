@@ -1,9 +1,11 @@
 # ADR 0006: react-big-calendar for month/week views; custom-built timeline/Gantt component (no third-party Gantt library)
 
 ## Status
+
 Proposed (Phase 0)
 
 ## Context
+
 The spec requires month and week calendar views, a timeline/Gantt-style
 project view, owner drag-and-drop rescheduling with an accessible non-drag
 alternative, and explicitly asks Phase 0 to identify license/deployment
@@ -12,6 +14,7 @@ against adding large dependencies without justification and preferring a
 focused, maintainable implementation.
 
 Surveyed options:
+
 - **react-big-calendar** — MIT license, mature, React-native (not a DOM-
   managing wrapper around a non-React library), supports month/week/agenda
   views out of the box.
@@ -31,6 +34,7 @@ a handful of milestones, over a period of months — not hundreds of rows,
 resource leveling, or critical-path computation.
 
 ## Decision
+
 - **Calendar (month/week):** `react-big-calendar` (MIT). It's React-native,
   actively maintained, and directly covers the required views without a
   wrapper layer.
@@ -39,6 +43,7 @@ resource leveling, or critical-path computation.
   rather than adopting a third-party Gantt library.
 
 ## Rationale for building the Gantt view
+
 - Every surveyed Gantt library manages its own DOM/rendering, which fights
   React's model and complicates the accessible-keyboard-alternative
   requirement (dnd-kit is accessibility-first by design; retrofitting
@@ -53,6 +58,7 @@ resource leveling, or critical-path computation.
   a third-party library's own configuration/theming system.
 
 ## Consequences
+
 - YeffoDesign owns the timeline component's edge cases (many overlapping
   bars, very long projects) rather than inheriting a library's. Scoped
   deliberately small; if project complexity grows well past what a simple
@@ -63,6 +69,7 @@ resource leveling, or critical-path computation.
   accessibility pattern, learned and tested once.
 
 ## Alternatives considered
+
 See survey above; dhtmlx Community Edition is the fallback documented here
 explicitly in case the custom timeline component proves insufficient once
 real usage begins.

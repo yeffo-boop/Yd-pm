@@ -1,0 +1,183 @@
+// YeffoHub — Prisma schema (Phase 1 slice)
+//
+// This is the foundation slice only: enough of the domain model to stand up
+// authentication, authorization primitives, and tenant isolation tests
+// (see docs/data-model.md for the full, eventual domain model). `Project`
+// here is intentionally a minimal stub — just enough fields to test
+// client/project scoping — and gains its full field set in Phase 3 via a
+// normal migration, without changing its identity or relations.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// Connection URL is provided via prisma.config.ts (Prisma 7 dropped the
+// bundled Rust query engine; PrismaClient now takes an explicit driver
+// adapter — see src/server/db.ts — and the CLI reads datasource.url from
+// prisma.config.ts instead of a `url` field here).
+datasource db {
+  provider = "postgresql"
+}
+
+// --- Enums ---------------------------------------------------------------
+
+enum Role {
+  OWNER
+  CLIENT
+}
+
+enum UserStatus {
+  ACTIVE
+  DISABLED
+}
+
+enum ClientCompanyStatus {
+  ACTIVE
+  ARCHIVED
+}
+
+enum ProjectStatus {
+  ACTIVE
+  ARCHIVED
+}
+
+// --- Users & access (docs/data-model.md §1) -------------------------------
+
+model User {
+  id           String     @id @default(uuid())
+  email        String     @unique
+  passwordHash String
+  role         Role
+  name         String
+  timeZone     String     @default("UTC")
+  status       UserStatus @default(ACTIVE)
+  /// Bumped on password change and on status change; every request's JWT is
+  /// checked against this value for immediate invalidation (ADR 0003).
+  tokenVersion Int        @default(0)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  deletedAt    DateTime?
+
+  clientContact     ClientContact?
+  grantedMemberships ProjectMembership[] @relation("MembershipGrantedBy")
+  auditLogEntries    AuditLog[]
+
+  @@index([role])
+}
+
+model ClientCompany {
+  id        String               @id @default(uuid())
+  name      String
+  status    ClientCompanyStatus  @default(ACTIVE)
+  createdAt DateTime             @default(now())
+  updatedAt DateTime             @updatedAt
+  deletedAt DateTime?
+
+  contacts ClientContact[]
+  projects Project[]
+
+  @@index([status])
+}
+
+model ClientContact {
+  id              String    @id @default(uuid())
+  clientCompanyId String
+  userId          String?   @unique
+  name            String
+  email           String
+  phone           String?
+  title           String?
+  isPrimary       Boolean   @default(false)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  deletedAt       DateTime?
+
+  clientCompany ClientCompany       @relation(fields: [clientCompanyId], references: [id], onDelete: Restrict)
+  user          User?               @relation(fields: [userId], references: [id], onDelete: SetNull)
+  memberships   ProjectMembership[]
+  primaryProjects Project[]         @relation("ProjectPrimaryContact")
+
+  @@index([clientCompanyId])
+  // "Exactly one non-deleted primary contact per company" is enforced by a
+  // partial unique index (WHERE isPrimary AND deletedAt IS NULL) added via
+  // raw SQL in migrations/20260827234500_primary_contact_partial_index —
+  // not expressible as a plain Prisma @@unique, which would (incorrectly)
+  // also cap a company at one *non*-primary contact.
+}
+
+/// Minimal Phase 1 project stub — expanded to the full field set from
+/// docs/data-model.md §4 in Phase 3. Exists now specifically so tenant
+/// isolation can be exercised end-to-end at the service/API level.
+model Project {
+  id              String        @id @default(uuid())
+  clientCompanyId String
+  primaryContactId String?
+  name            String
+  slug            String        @unique
+  status          ProjectStatus @default(ACTIVE)
+  isPublished     Boolean       @default(false)
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  archivedAt      DateTime?
+  deletedAt       DateTime?
+
+  clientCompany ClientCompany       @relation(fields: [clientCompanyId], references: [id], onDelete: Restrict)
+  primaryContact ClientContact?     @relation("ProjectPrimaryContact", fields: [primaryContactId], references: [id], onDelete: SetNull)
+  memberships   ProjectMembership[]
+
+  @@index([clientCompanyId])
+  @@index([status])
+}
+
+/// Explicit per-project access grant for an *additional* client contact.
+/// A company's primary contact has implicit access to all of that
+/// company's projects and never needs a row here (docs/permissions.md §1).
+model ProjectMembership {
+  id              String   @id @default(uuid())
+  projectId       String
+  clientContactId String
+  grantedByUserId String
+  grantedAt       DateTime @default(now())
+
+  project       Project       @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  clientContact ClientContact @relation(fields: [clientContactId], references: [id], onDelete: Cascade)
+  grantedByUser User          @relation("MembershipGrantedBy", fields: [grantedByUserId], references: [id], onDelete: Restrict)
+
+  @@unique([projectId, clientContactId])
+  @@index([clientContactId])
+}
+
+// --- Auditing (docs/data-model.md §12) ------------------------------------
+
+/// Owner-only system/security audit log. Append-only by convention — no
+/// update or delete path is exposed anywhere in the service layer.
+model AuditLog {
+  id           String   @id @default(uuid())
+  actorUserId  String?
+  action       String
+  entityType   String
+  entityId     String?
+  metadataJson Json?
+  ipAddress    String?
+  createdAt    DateTime @default(now())
+
+  actorUser User? @relation(fields: [actorUserId], references: [id], onDelete: SetNull)
+
+  @@index([entityType, entityId])
+  @@index([createdAt])
+}
+
+// --- Rate limiting (docs/security.md §8) ----------------------------------
+
+/// Fixed-window counter used by the Postgres-backed rate limiter
+/// (src/server/services/rate-limit.ts). One row per (scope, key, window).
+model RateLimitBucket {
+  id          String   @id @default(uuid())
+  scope       String
+  bucketKey   String
+  windowStart DateTime
+  count       Int      @default(0)
+
+  @@unique([scope, bucketKey, windowStart])
+  @@index([windowStart])
+}

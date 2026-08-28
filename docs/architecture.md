@@ -26,32 +26,33 @@ implementation.
 
 ## 2. Technology stack and versions
 
-| Concern | Choice | Version (baseline, re-check at Phase 1 install) | Notes |
-|---|---|---|---|
-| Framework | Next.js (App Router) | 16.3.x | Latest stable line per spec instruction; Node runtime only, no Edge |
-| Language | TypeScript | 5.9.x, `strict: true` | |
-| Runtime | Node.js | 22.x LTS | matches Next 16 support matrix |
-| Database | PostgreSQL | 16.x | Docker official image, pinned minor |
-| ORM | Prisma | 7.x (`prisma`, `@prisma/client`) | v7 is current GA; v8 is RC-only as of this writing — do not adopt until GA + soak time (see ADR 0002) |
-| Auth | Auth.js (NextAuth) v5, Credentials provider + Prisma adapter | `next-auth@5.0.0-beta.3x` pinned exact version | Ships under a long-lived beta tag but is the maintained, production-used release; risk accepted and documented in ADR 0003 |
-| Password hashing | `argon2` (node-argon2, native binding), Argon2id | latest 0.4x | Native module is fine because we control the Docker runtime (Node, not Edge/serverless) |
-| Styling | Tailwind CSS | 4.x | |
-| UI primitives | Radix UI primitives + local shadcn/ui-style components (copied in, not an npm dependency) | latest | Keeps full control over accessibility and styling, no black-box component library |
-| Drag & drop / accessible interactions | `@dnd-kit/core` + `@dnd-kit/sortable` | latest | MIT, built with keyboard/screen-reader support as a first-class concern — used for Kanban and the custom timeline (see ADR 0006) |
-| Calendar (month/week) | `react-big-calendar` | latest | MIT license, mature, supports month/week/agenda |
-| Timeline / Gantt-style view | Custom-built component (CSS grid + `dnd-kit`), not a third-party Gantt library | n/a | Rationale and alternatives considered in ADR 0006 |
-| Forms & validation | `react-hook-form` + `zod` | latest | Zod schemas shared between client forms, server actions, and API boundaries (single validation source) |
-| Background jobs / scheduling | `pg-boss` | latest 10.x | Postgres-native queue (`SKIP LOCKED`), no Redis dependency; see ADR 0004 |
-| Object storage | Google Cloud Storage via `@google-cloud/storage`, behind an internal `StorageProvider` interface | latest | Private bucket, signed URLs; fake in-memory adapter for tests; see ADR 0005 |
-| Email | `nodemailer` over SMTP, behind an internal `MailProvider` interface | latest | Business SMTP; Mailhog/Maildev for local dev capture |
-| Testing (unit/integration) | Vitest + Testing Library | latest | |
-| Testing (E2E) | Playwright | latest | |
-| Lint/format | ESLint (flat config) + Prettier | latest | |
-| CI | GitHub Actions | n/a | lint, typecheck, unit, integration (Postgres service container), Prisma migrate diff check, build, Playwright smoke |
-| Containerization | Docker Compose (`compose.yaml`), multi-stage Dockerfile | Docker Engine 27.x+ / Compose v2 plugin | Non-root runtime user |
-| Reverse proxy | Caddy (example config) | latest | Automatic HTTPS via Let's Encrypt; Nginx example included as an alternative |
+| Concern                               | Choice                                                                                               | Version (baseline, re-check at Phase 1 install)                 | Notes                                                                                                                                                                                                                                                                                  |
+| ------------------------------------- | ---------------------------------------------------------------------------------------------------- | --------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Framework                             | Next.js (App Router)                                                                                 | 16.3.x                                                          | Latest stable line per spec instruction; Node runtime only, no Edge                                                                                                                                                                                                                    |
+| Language                              | TypeScript                                                                                           | 5.9.x, `strict: true`                                           |                                                                                                                                                                                                                                                                                        |
+| Runtime                               | Node.js                                                                                              | 22.x LTS                                                        | matches Next 16 support matrix                                                                                                                                                                                                                                                         |
+| Database                              | PostgreSQL                                                                                           | 16.x                                                            | Docker official image, pinned minor                                                                                                                                                                                                                                                    |
+| ORM                                   | Prisma                                                                                               | 7.x (`prisma`, `@prisma/client`)                                | v7 is current GA; v8 is RC-only as of this writing — do not adopt until GA + soak time (see ADR 0002)                                                                                                                                                                                  |
+| Auth                                  | Auth.js (NextAuth) v5, Credentials provider, JWT strategy + server-checked token version, no adapter | `next-auth@5.0.0-beta.3x` pinned exact version                  | Ships under a long-lived beta tag but is the maintained, production-used release; the Credentials provider does not support Auth.js's database session strategy (upstream limitation), so invalidation is done via a `User.tokenVersion` check on every request instead — see ADR 0003 |
+| Password hashing                      | `argon2` (node-argon2, native binding), Argon2id                                                     | latest 0.4x                                                     | Native module is fine because we control the Docker runtime (Node, not Edge/serverless)                                                                                                                                                                                                |
+| Styling                               | Tailwind CSS                                                                                         | 4.x                                                             |                                                                                                                                                                                                                                                                                        |
+| UI primitives                         | Radix UI primitives + local shadcn/ui-style components (copied in, not an npm dependency)            | latest                                                          | Keeps full control over accessibility and styling, no black-box component library                                                                                                                                                                                                      |
+| Drag & drop / accessible interactions | `@dnd-kit/core` + `@dnd-kit/sortable`                                                                | latest                                                          | MIT, built with keyboard/screen-reader support as a first-class concern — used for Kanban and the custom timeline (see ADR 0006)                                                                                                                                                       |
+| Calendar (month/week)                 | `react-big-calendar`                                                                                 | latest                                                          | MIT license, mature, supports month/week/agenda                                                                                                                                                                                                                                        |
+| Timeline / Gantt-style view           | Custom-built component (CSS grid + `dnd-kit`), not a third-party Gantt library                       | n/a                                                             | Rationale and alternatives considered in ADR 0006                                                                                                                                                                                                                                      |
+| Forms & validation                    | `react-hook-form` + `zod`                                                                            | latest                                                          | Zod schemas shared between client forms, server actions, and API boundaries (single validation source)                                                                                                                                                                                 |
+| Background jobs / scheduling          | `pg-boss`                                                                                            | latest 10.x                                                     | Postgres-native queue (`SKIP LOCKED`), no Redis dependency; see ADR 0004                                                                                                                                                                                                               |
+| Object storage                        | Google Cloud Storage via `@google-cloud/storage`, behind an internal `StorageProvider` interface     | latest                                                          | Private bucket, signed URLs; fake in-memory adapter for tests; see ADR 0005                                                                                                                                                                                                            |
+| Email                                 | `nodemailer` over SMTP, behind an internal `MailProvider` interface                                  | latest                                                          | Business SMTP; Mailhog/Maildev for local dev capture                                                                                                                                                                                                                                   |
+| Testing (unit/integration)            | Vitest + Testing Library                                                                             | latest                                                          |                                                                                                                                                                                                                                                                                        |
+| Testing (E2E)                         | Playwright                                                                                           | latest                                                          |                                                                                                                                                                                                                                                                                        |
+| Lint/format                           | ESLint (flat config) + Prettier                                                                      | ESLint 9.39.x (pinned below latest — see note), Prettier latest |                                                                                                                                                                                                                                                                                        |
+| CI                                    | GitHub Actions                                                                                       | n/a                                                             | lint, typecheck, unit, integration (Postgres service container), Prisma migrate diff check, build, Playwright smoke                                                                                                                                                                    |
+| Containerization                      | Docker Compose (`compose.yaml`), multi-stage Dockerfile                                              | Docker Engine 27.x+ / Compose v2 plugin                         | Non-root runtime user                                                                                                                                                                                                                                                                  |
+| Reverse proxy                         | Caddy (example config)                                                                               | latest                                                          | Automatic HTTPS via Let's Encrypt; Nginx example included as an alternative                                                                                                                                                                                                            |
 
 ### 2.1 Why these, briefly (full reasoning in ADRs)
+
 - **Prisma 7, not 8** — Prisma 8 is release-candidate only; the spec requires
   verified, non-deprecated, mutually compatible versions, so we start on the
   supported GA line and treat a Prisma 8 upgrade as a tracked future ADR once
@@ -78,6 +79,17 @@ implementation.
   this scale; documented as revisitable if job volume grows an order of
   magnitude.
 - **No third-party Gantt library** — see ADR 0006.
+- **ESLint pinned to 9.39.x, not the current 10.x line** — verified during
+  Phase 1 setup, not assumed: `eslint-config-next@16.3.3` bundles its own
+  copies of `eslint-plugin-react`/`eslint-plugin-jsx-a11y`, whose latest
+  published releases still declare a peer range topping out at ESLint 9.
+  This isn't just a stale peer-range formality — running ESLint 10 against
+  this config throws at lint time (`contextOrFilename.getFilename is not a
+function` inside `eslint-plugin-react`'s React-version detection), so
+  ESLint 9.39.5 is a deliberate, tested pin, carrying npm's "no longer
+  supported" deprecation notice for the 9.x line as an accepted, temporary
+  tradeoff. Documented here as a tracked upgrade: revisit once
+  `eslint-config-next` ships with ESLint-10-compatible plugin versions.
 
 ## 3. High-level architecture
 
@@ -120,6 +132,7 @@ and one set of domain services — the worker calls the same service-layer
 functions the web process does, never duplicated logic.
 
 ## 4. Module / folder layout (established in Phase 1, documented now so later
+
 phases don't drift)
 
 ```
@@ -187,6 +200,7 @@ second database, no search engine (Postgres `tsvector`/trigram covers the
 ~25-project scale per spec §9/§17), no analytics/telemetry SaaS in the MVP.
 
 ## 7. Background jobs (pg-boss) — job catalog (Phase 4/7 implement; named now
+
 for schema/queue stability)
 
 `deadline-reminder`, `send-email`, `recurring-maintenance-generate`,
@@ -208,6 +222,7 @@ the current database state (project membership, file visibility) — signed
 URLs are short-lived (minutes) and single-purpose, not cached or reused.
 
 ## 9. Implementation plan (recap of the phase sequence — detail owned by each
+
 phase's own checkpoint, not repeated here)
 
 Phase 1 Foundation → Phase 2 Sales conversion & client management → Phase 3
@@ -220,10 +235,10 @@ a written checkpoint before the next phase starts.
 
 ## 10. Open risk register (carried forward, not blocking Phase 0 approval)
 
-| Risk | Mitigation |
-|---|---|
-| Auth.js v5 stays on beta version tags indefinitely | Pin exact version, isolate behind `AuthService`, track upstream changelog each phase |
-| pg-boss throughput ceiling if project count grows well past MVP scale | Documented swap path to BullMQ+Redis behind the same job-enqueue interface if ever needed |
+| Risk                                                                    | Mitigation                                                                                                                                   |
+| ----------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| Auth.js v5 stays on beta version tags indefinitely                      | Pin exact version, isolate behind `AuthService`, track upstream changelog each phase                                                         |
+| pg-boss throughput ceiling if project count grows well past MVP scale   | Documented swap path to BullMQ+Redis behind the same job-enqueue interface if ever needed                                                    |
 | No third-party Gantt library means we own timeline rendering/edge cases | Scoped intentionally small (bars = milestones/phases, not full critical-path scheduling); revisit only if the custom component can't keep up |
-| GCS free-tier limits / billing account setup | Documented in Phase 6/8, needs owner's GCP project — requested when that phase starts, not before |
-| Argon2 native binding in Docker build | Multi-stage Dockerfile builds on the target platform (no cross-compilation surprises); verified in CI's Linux runner, matching prod |
+| GCS free-tier limits / billing account setup                            | Documented in Phase 6/8, needs owner's GCP project — requested when that phase starts, not before                                            |
+| Argon2 native binding in Docker build                                   | Multi-stage Dockerfile builds on the target platform (no cross-compilation surprises); verified in CI's Linux runner, matching prod          |

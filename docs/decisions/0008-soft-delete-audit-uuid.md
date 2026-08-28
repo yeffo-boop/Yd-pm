@@ -1,9 +1,11 @@
 # ADR 0008: UUID primary keys, soft deletion for business records, dual-audit-trail (system audit log + client activity log + shared activity feed)
 
 ## Status
+
 Proposed (Phase 0)
 
 ## Context
+
 The spec asks for UUIDs unless there's a strong documented reason
 otherwise, soft deletion/recovery for important business records,
 auditability throughout, and three distinct audit/activity surfaces with
@@ -12,6 +14,7 @@ owner-only client-activity log, and a client-facing shared activity feed
 that must only ever contain published events.
 
 ## Decision
+
 - **UUID primary keys** everywhere (exact v4 vs. v7 decided at Phase 1
   implementation based on final Prisma/Postgres version support for
   time-ordered generation; either satisfies "non-guessable, non-
@@ -33,12 +36,13 @@ that must only ever contain published events.
   single unified log at read time.
 
 ## Consequences
+
 - UUIDs cost a small amount of index size/readability versus integers;
   acceptable given the security property they provide (matches spec intent
   even though authorization, not ID obscurity, is the real control — see
   `docs/security.md` §1).
 - Soft-deleted records need consistent handling in every query (`WHERE
-  deletedAt IS NULL` applied by the repository layer by default, not
+deletedAt IS NULL` applied by the repository layer by default, not
   ad hoc per call site) — this is a repository-layer discipline documented
   here so it's caught in review if a new query forgets it.
 - Three audit tables means slightly more write-side code (an event may be
@@ -48,6 +52,7 @@ that must only ever contain published events.
   facing table simply never receives internal events in the first place.
 
 ## Alternatives considered
+
 - **Single unified `Event` table with a `visibility` column** — rejected;
   the spec is explicit that draft/internal data must not leak through any
   surface including activity feeds, and a single filtered table makes that

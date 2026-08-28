@@ -1,9 +1,11 @@
 # ADR 0004: pg-boss (Postgres-backed) for background jobs, not Redis/BullMQ
 
 ## Status
+
 Proposed (Phase 0)
 
 ## Context
+
 The spec requires a database-backed job queue or robust scheduled-job
 strategy for reminders, email delivery, recurring tasks, and retry
 handling, explicitly asking for the smallest dependable self-hosted option
@@ -13,11 +15,13 @@ and recurring-maintenance generation — on the order of tens to low hundreds
 of jobs per day, not a high-throughput queue workload.
 
 ## Decision
+
 Use `pg-boss`, which implements a job queue on top of PostgreSQL using
 `FOR UPDATE SKIP LOCKED` for safe concurrent consumption, running in the
 same Postgres instance the app already operates, backs up, and monitors.
 
 ## Consequences
+
 - No second stateful service (Redis) to deploy, secure, back up, and
   monitor on a small VPS — directly serves the spec's "smallest dependable
   self-hosted option" instruction.
@@ -37,6 +41,7 @@ same Postgres instance the app already operates, backs up, and monitors.
   of magnitude beyond current projections.
 
 ## Alternatives considered
+
 - **BullMQ + Redis** — most capable option, rejected for MVP due to the
   added operational surface (a second stateful service) for a workload
   this small; the job-enqueue call sites are wrapped in a thin internal

@@ -48,8 +48,7 @@ reasoning behind each choice.
 - Node.js 22.x and npm
 - A local PostgreSQL 16 instance (or Docker, to run one via Compose)
 - Docker Engine + Compose plugin (optional for local dev; required for the
-  production-shaped deployment path — see `docs/deployment.md`, added in
-  Phase 8)
+  production-shaped deployment path — see `docs/deployment.md`)
 
 ## Quick start (local development)
 
@@ -120,8 +119,9 @@ docker compose up -d app worker
 ```
 
 See `docs/decisions/0007-docker-compose-deployment.md` for the reasoning,
-and `docs/deployment.md` (added in Phase 8) for the full production
-deployment procedure, reverse proxy setup, and backups.
+and `docs/deployment.md` for a concrete deployment walkthrough (reverse
+proxy setup included). Automated backups, monitoring, and a zero-downtime
+deploy procedure are added in Phase 8.
 
 ## Testing
 

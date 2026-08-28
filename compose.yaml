@@ -1,11 +1,13 @@
-# Docker Compose for local development and (later, hardened further in
-# Phase 8) production deployment — ADR 0007. Local development can also run
-# the app natively (`npm run dev`) against just the `db` service; this file
-# is what makes `docker compose up` alone fully reproducible too.
+# Docker Compose for local development and production deployment — ADR
+# 0007. Local development can also run the app natively (`npm run dev`)
+# against just the `db` service; this file is what makes `docker compose
+# up` alone fully reproducible too.
 #
-# Production-specific hardening (secrets management beyond a .env file,
-# resource limits, log rotation, the reverse proxy, automated backups) is
-# completed in Phase 8 — see docs/deployment.md once that phase lands.
+# `app`/`db` publish to 127.0.0.1 only — a host-level reverse proxy
+# (Apache, Nginx, Caddy...) terminates TLS and proxies to 127.0.0.1:3000.
+# See docs/deployment.md for a concrete walkthrough. Further production
+# hardening (resource limits, log rotation, automated backups, zero-
+# downtime deploys) is completed in Phase 8.
 
 services:
   db:
@@ -16,7 +18,12 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-yeffohub}
       POSTGRES_DB: ${POSTGRES_DB:-yeffohub}
     ports:
-      - "5432:5432"
+      # Bound to loopback only — the `app`/`worker`/`migrate` containers
+      # reach this over the internal Compose network by service name
+      # (`db:5432`) regardless; publishing to 127.0.0.1 rather than 0.0.0.0
+      # just lets you `psql` from the VPS itself for debugging without
+      # exposing Postgres to the internet.
+      - "127.0.0.1:5432:5432"
     volumes:
       - db-data:/var/lib/postgresql/data
     healthcheck:
@@ -54,7 +61,11 @@ services:
       db:
         condition: service_healthy
     ports:
-      - "3000:3000"
+      # Bound to loopback only — a reverse proxy on the host (Apache,
+      # Nginx, Caddy...) terminates TLS and proxies to 127.0.0.1:3000;
+      # the app is never directly reachable from the internet on this
+      # port. See docs/deployment.md.
+      - "127.0.0.1:3000:3000"
     environment:
       NODE_ENV: production
       # Built from the same POSTGRES_* values the `db` service uses, with

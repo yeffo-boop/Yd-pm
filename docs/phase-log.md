@@ -223,3 +223,73 @@ Owner asked to deploy this Phase 1 build to the real VPS now, for private
 (owner-only) testing, before starting Phase 2. See the deployment
 checkpoint immediately following this entry for what that required and
 the exact steps taken/handed to the owner.
+
+---
+
+## Interim — private VPS deployment (Phase 1 build)
+
+**Date:** 2026-08-28
+**Status:** Deployment guide and hardening complete; deployment itself is
+the owner's to run (this session has no access to the VPS).
+
+Out of the normal phase sequence, at the owner's explicit request: get the
+Phase 1 build running on the real production VPS for private, owner-only
+testing before Phase 2 starts. `docs/deployment.md` normally lands in
+Phase 8 — this is a scoped-down version written now, honestly limited to
+what Phase 1 needs (no SMTP/GCS, no automated backups yet — those stay
+Phase 8 work).
+
+### Confirmed environment (from the owner, not assumed)
+
+- VPS: Debian, Docker Engine/Compose not yet installed
+- Domain: `hub.yeffodesign.com`, DNS already pointed at the VPS
+- Apache already serves other sites on 80/443, with a vhost for this
+  subdomain already issued a working HTTPS certificate
+- The repository is already cloned on the server
+
+### What changed
+
+- **`compose.yaml` hardened for internet-facing deployment**: `app` and
+  `db` now publish to `127.0.0.1` only, not `0.0.0.0` — neither the app
+  nor Postgres is directly reachable from the internet; only Apache (via
+  its own TLS-terminated vhost) reaches the app, over loopback. This
+  wasn't needed for local development but would have been a real exposure
+  once bound on a public VPS.
+- **`docs/deployment.md`** — concrete walkthrough: Debian Docker install,
+  cloning/checking out this branch, generating real secrets (never the
+  `.env.example` placeholders), building images, migrating, creating the
+  owner's real account via `scripts/bootstrap-owner.ts` (explicitly _not_
+  the seed script — seed data is fine for local/CI, not for anything
+  internet-reachable), starting `app`/`worker`, and the exact Apache vhost
+  snippet to reverse-proxy `hub.yeffodesign.com` to the container
+  (`ProxyPreserveHost On` + `RequestHeader set X-Forwarded-Proto "https"`,
+  the standard and easy-to-miss requirement for Auth.js's secure-cookie
+  and same-origin checks to work correctly behind a proxy that terminates
+  TLS itself).
+- **README.md** — corrected two "added in Phase 8" references now that
+  `docs/deployment.md` exists.
+
+### Why `trustHost: true` (already set in Phase 1) mattered here
+
+Auth.js's Credentials/JWT setup (ADR 0003) needs to know the request
+actually arrived over HTTPS even though Apache→container traffic is plain
+HTTP internally; `trustHost: true` plus the `X-Forwarded-Proto` header set
+in the Apache config is what makes that resolve correctly without a
+hard-coded `AUTH_URL`.
+
+### Verification
+
+- `docker compose config` re-validated after the port-binding change:
+  confirms `host_ip: 127.0.0.1` on both `app` and `db`.
+- Actual deployment execution, and the resulting live site, are the
+  owner's to run and confirm — this session has no network path to the
+  VPS. Flagged explicitly, not glossed over: nothing above has been
+  observed running on the real server.
+
+### Unresolved risk
+
+Same Docker-build-unverified-by-this-session caveat as the Phase 1 entry
+above — the deployment guide's `docker compose build` step is the first
+time these exact images will actually be built. If it fails, the error
+will be concrete and actionable (a real build log), not a repeat of an
+already-known problem.

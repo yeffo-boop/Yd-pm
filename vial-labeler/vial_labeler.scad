@@ -141,7 +141,7 @@ module jig10() labeler(v10_len, v10_dia, v10_body, v10_cap_dia, v10_cap_len, v10
 
 if (size == "3ml")       jig3();
 else if (size == "10ml") jig10();
-else {
+else if (size == "both") {
     jig3();
     translate([0, 2 * max(v3_dia / 2 + cradle_clear + wing, v3_label_w / 2 + 4) + 10, 0]) jig10();
 }

@@ -6,18 +6,16 @@
 // exactly one label-height wide over the vial.
 //
 // Why it goes on straight
-//   - The fins are as long as the label's wings, so the whole label sits
-//     in the slot and can't twist (only ~0.3 mm play over its length).
+//   - The fins run past both sides of the vial, so the label is held on
+//     both sides of the vial and can't twist (only ~0.3 mm play).
 //   - The fin tops are chamfered so the label drops into the slot.
-//   - Notches on the fin tops mark where the label's two ends go when it
-//     is centered over the vial, so both wings hang evenly.
 //   - The fin positions are measured from the BASE wall, so every label
 //     lands at the same height on the vial.
 //
 // How to use
 //   1. Set the vial in the saddles, bottom pushed against the BASE wall.
 //   2. Peel a label and drop it STICKY SIDE DOWN into the slot between
-//      the fins, ends lined up with the notches. Press it onto the top of the vial.
+//      the fins, roughly centered. Press it onto the top of the vial.
 //   3. Roll the vial by the cap. The fins keep both label edges square
 //      while it wraps.
 //
@@ -58,7 +56,8 @@ under_gap    = 2.0;  // space between vial and tray floor (label passes here)
 rim_w        = 2.0;  // tray rim width
 rim_h        = 1.2;  // tray rim height above the floor
 wall_t       = 3.0;  // BASE stop wall thickness
-wing         = 18;   // how far the fins reach past each side of the vial
+wing         = 8;    // how far the fins reach past each side of the vial
+size_tab     = 6;    // strip past the cap end for the size marking
 fin_t        = 2.0;  // guide fin thickness
 fin_above    = 4.0;  // fin height above the top of the vial
 chamfer      = 1.0;  // lead-in chamfer on the fin tops (each side)
@@ -75,11 +74,11 @@ module labeler(vlen, vdia, vbody, cdia, clen, lw, lh, off_in, label_txt) {
     zcen   = tray_t + under_gap + R;         // saddle arc centers
     top    = zcen - cradle_clear + r;        // top of a resting vial
     fin_z  = top + fin_above;
-    W      = max(R + wing, lw / 2 + 4);      // half-width of the fins / tray
+    W      = R + wing;                       // half-width of the fins / tray
     f1     = off - label_gap - fin_t;        // first fin (base side)
     f2     = off + lh + label_gap;           // second fin (cap side)
     x0     = -wall_t - rim_w;                // tray extents
-    x1     = vlen + rim_w;
+    x1     = vlen + size_tab + rim_w;
 
     assert(off >= 0 && off + lh <= vbody, "Label does not fit on the straight body with this offset");
     assert(f2 + fin_t < vlen - clen, "Cap saddle overlaps the label fins");
@@ -100,7 +99,7 @@ module labeler(vlen, vdia, vbody, cdia, clen, lw, lh, off_in, label_txt) {
             }
 
             // BASE stop wall + base saddle (up to the first fin)
-            translate([-wall_t, -R - 4, 0]) cube([wall_t + 0.01, 2 * R + 8, top - r * 0.3]);
+            translate([-wall_t, -W, 0]) cube([wall_t + 0.01, 2 * W, top - r * 0.3]);
             if (f1 > 0) translate([0, -R - 4, 0]) cube([f1 + 0.01, 2 * R + 8, zcen]);
 
             // cap saddle
@@ -118,21 +117,15 @@ module labeler(vlen, vdia, vbody, cdia, clen, lw, lh, off_in, label_txt) {
         slot(R, -wall_t, vlen - clen);
         slot(Rc, vlen - clen, vlen);
 
-        // notches on the fin tops where the label's two ends should sit
-        // when it is centered over the top of the vial
-        for (x = [f1, f2], s = [-1, 1])
-            translate([x - 1, s * lw / 2, fin_z])
-                rotate([0, 90, 0]) cylinder(r = 1.2, h = fin_t + 2, $fn = 4);
-
-        // size text on the floor beside the cap saddle
-        translate([vlen - clen / 2, -(Rc + 4 + (W - Rc - 4) / 2), tray_t - mark_depth])
-            linear_extrude(1) rotate(90)
+        // size text past the cap end; top of the letters toward the cap
+        translate([vlen + size_tab / 2, 0, tray_t - mark_depth])
+            linear_extrude(1) rotate(-90)
                 text(label_txt, size = 3.5, halign = "center", valign = "center");
 
-        // "BASE" on the stop wall
-        translate([-wall_t / 2, -R - 2, top - r * 0.3 - mark_depth])
-            linear_extrude(1) rotate(90)
-                text("BASE", size = 2, halign = "right", valign = "center");
+        // "BASE" on the stop wall, same orientation
+        translate([-wall_t / 2, -R - 1, top - r * 0.3 - mark_depth])
+            linear_extrude(1) rotate(-90)
+                text("BASE", size = 1.8, halign = "left", valign = "center");
     }
 }
 
@@ -143,5 +136,5 @@ if (size == "3ml")       jig3();
 else if (size == "10ml") jig10();
 else if (size == "both") {
     jig3();
-    translate([0, 2 * max(v3_dia / 2 + cradle_clear + wing, v3_label_w / 2 + 4) + 10, 0]) jig10();
+    translate([0, 2 * (v3_dia / 2 + cradle_clear + wing) + 10, 0]) jig10();
 }

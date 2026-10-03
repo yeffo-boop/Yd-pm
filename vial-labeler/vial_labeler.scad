@@ -36,7 +36,7 @@ v3_body     = 25;    // straight body length, base to start of shoulder
 v3_cap_dia  = 13.5;  // cap / crimp outside diameter
 v3_cap_len  = 7;     // cap / crimp length
 v3_label_w  = 44.5;  // label length (wraps around the vial)  1.75"
-v3_label_h  = 19;    // label height (along the vial axis)    0.75"
+v3_label_h  = 21;    // label height (along the vial axis)
 v3_offset   = -1;    // label bottom edge distance from vial base; -1 = auto-center on straight body
 
 // ---------- 10 mL vial + label ----------
@@ -46,7 +46,7 @@ v10_body    = 33;
 v10_cap_dia = 20.5;
 v10_cap_len = 8;
 v10_label_w = 63.5;  // 2.5"
-v10_label_h = 25.4;  // 1"
+v10_label_h = 30;
 v10_offset  = -1;
 
 // ---------- Jig settings ----------
@@ -85,8 +85,8 @@ module labeler(vlen, vdia, vbody, cdia, clen, lw, lh, off_in, label_txt) {
 
     // vial-shaped clearance cut, open to the top
     module slot(rad, xa, xb) {
-        translate([xa - 1, 0, zcen]) rotate([0, 90, 0]) cylinder(r = rad, h = xb - xa + 2);
-        translate([xa - 1, -rad, zcen]) cube([xb - xa + 2, 2 * rad, 100]);
+        translate([xa, 0, zcen]) rotate([0, 90, 0]) cylinder(r = rad, h = xb - xa + 1);
+        translate([xa, -rad, zcen]) cube([xb - xa + 1, 2 * rad, 100]);
     }
 
     difference() {
@@ -114,7 +114,7 @@ module labeler(vlen, vdia, vbody, cdia, clen, lw, lh, off_in, label_txt) {
         }
 
         // vial clearance through saddles and fins
-        slot(R, -wall_t, vlen - clen);
+        slot(R, 0, vlen - clen);        // starts at x = 0: BASE wall stays solid
         slot(Rc, vlen - clen, vlen);
 
         // size text past the cap end; top of the letters toward the cap
